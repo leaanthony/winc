@@ -190,6 +190,14 @@ func (cba *ControlBase) clampSize(width, height int) (int, int) {
 //	return shcoreErr == nil
 //}
 
+func (cba *ControlBase) GetSystemXYDPI() (x, y int) {
+	screen := w32.GetDC(0)
+	defer w32.ReleaseDC(0, screen)
+	x = w32.GetDeviceCaps(screen, w32.LOGPIXELSX)
+	y = w32.GetDeviceCaps(screen, w32.LOGPIXELSY)
+	return
+}
+
 func (cba *ControlBase) SetSize(width, height int) {
 	x, y := cba.Pos()
 	width, height = cba.clampSize(width, height)
@@ -489,13 +497,13 @@ func (cba *ControlBase) scaleWithWindowDPI(width, height int) (int, int) {
 }
 
 func (cba *ControlBase) scaleWithSystemDPI(width, height int) (int, int) {
-	dpi := cba.GetSystemDPI()
+	xDpi, yDpi := cba.GetSystemXYDPI()
 
-	DPIScaleX := dpi / 96.0
-	DPIScaleY := dpi / 96.0
+	DPIScaleX := float64(xDpi) / 96.0
+	DPIScaleY := float64(yDpi) / 96.0
 
-	width *= int(DPIScaleX)
-	height *= int(DPIScaleY)
+	width = int(float64(width) * DPIScaleX)
+	height = int(float64(height) * DPIScaleY)
 	return width, height
 }
 
