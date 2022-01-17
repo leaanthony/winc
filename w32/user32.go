@@ -1096,11 +1096,6 @@ func MonitorFromWindow(hwnd HWND, dwFlags uint32) HMONITOR {
 	return HMONITOR(ret)
 }
 
-func GetDpiForSystem() uint {
-	ret, _, _ := procGetDpiForSystem.Call()
-	return uint(ret)
-}
-
 func GetMonitorInfo(hMonitor HMONITOR, lmpi *MONITORINFO) bool {
 	ret, _, _ := procGetMonitorInfo.Call(
 		uintptr(hMonitor),

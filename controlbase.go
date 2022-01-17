@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"unsafe"
 
+	"golang.org/x/sys/windows"
+
 	"github.com/leaanthony/winc/w32"
 )
 
@@ -98,9 +100,12 @@ func (cba *ControlBase) SetHandle(hwnd w32.HWND) {
 	cba.hwnd = hwnd
 }
 
-func (cba *ControlBase) GetSystemDPI() w32.UINT {
-	dpi := w32.GetDpiForSystem()
-	return dpi
+func (cba *ControlBase) GetSystemXYDPI() (w32.UINT, w32.UINT) {
+	screen := w32.GetDC(0)
+	x := w32.GetDeviceCaps(screen, w32.LOGPIXELSX)
+	y := w32.GetDeviceCaps(screen, w32.LOGPIXELSY)
+	w32.ReleaseDC(0, screen)
+	return w32.UINT(x), w32.UINT(y)
 }
 
 func (cba *ControlBase) GetWindowDPI() (w32.UINT, w32.UINT) {
@@ -183,21 +188,17 @@ func (cba *ControlBase) clampSize(width, height int) (int, int) {
 	return width, height
 }
 
-//func supportsPerMonitorDPI() bool {
-//	shcore := windows.NewLazyDLL("shcore.dll")
-//	getDpiForMonitor := shcore.NewProc("GetDpiForMonitor")
-//	shcoreErr := getDpiForMonitor.Load()
-//	return shcoreErr == nil
-//}
+func supportsPerMonitorDPI() bool {
+	shcore := windows.NewLazyDLL("shcore.dll")
+	getDpiForMonitor := shcore.NewProc("GetDpiForMonitor")
+	shcoreErr := getDpiForMonitor.Find()
+	return shcoreErr == nil
+}
 
 func (cba *ControlBase) SetSize(width, height int) {
 	x, y := cba.Pos()
 	width, height = cba.clampSize(width, height)
-	//if supportsPerMonitorDPI() {
-	//	width, height = cba.scaleWithWindowDPI(width, height)
-	//} else {
-	width, height = cba.scaleWithSystemDPI(width, height)
-	//}
+	width, height = cba.scaleWithWindowDPI(width, height)
 	w32.MoveWindow(cba.hwnd, x, y, width, height, true)
 }
 
@@ -478,21 +479,14 @@ func (cba *ControlBase) OnKeyUp() *EventManager {
 }
 
 func (cba *ControlBase) scaleWithWindowDPI(width, height int) (int, int) {
-	dpix, dpiy := cba.GetWindowDPI()
-
+	var dpix, dpiy w32.UINT
+	if supportsPerMonitorDPI() {
+		dpix, dpiy = cba.GetWindowDPI()
+	} else {
+		dpix, dpiy = cba.GetSystemXYDPI()
+	}
 	DPIScaleX := dpix / 96.0
 	DPIScaleY := dpiy / 96.0
-
-	width *= int(DPIScaleX)
-	height *= int(DPIScaleY)
-	return width, height
-}
-
-func (cba *ControlBase) scaleWithSystemDPI(width, height int) (int, int) {
-	dpi := cba.GetSystemDPI()
-
-	DPIScaleX := dpi / 96.0
-	DPIScaleY := dpi / 96.0
 
 	width *= int(DPIScaleX)
 	height *= int(DPIScaleY)
