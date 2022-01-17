@@ -73,13 +73,14 @@ func PreTranslateMessage(msg *w32.MSG) bool {
 
 // RunMainLoop processes messages in main application loop.
 func RunMainLoop() int {
-	var m w32.MSG
+	m := (*w32.MSG)(unsafe.Pointer(w32.GlobalAlloc(0, uint32(unsafe.Sizeof(w32.MSG{})))))
+	defer w32.GlobalFree(w32.HGLOBAL(unsafe.Pointer(m)))
 
-	for w32.GetMessage(&m, 0, 0, 0) != 0 {
+	for w32.GetMessage(m, 0, 0, 0) != 0 {
 
-		if !PreTranslateMessage(&m) {
-			w32.TranslateMessage(&m)
-			w32.DispatchMessage(&m)
+		if !PreTranslateMessage(m) {
+			w32.TranslateMessage(m)
+			w32.DispatchMessage(m)
 		}
 	}
 
@@ -89,12 +90,14 @@ func RunMainLoop() int {
 
 // PostMessages processes recent messages. Sometimes helpful for instant window refresh.
 func PostMessages() {
-	var m w32.MSG
+	m := (*w32.MSG)(unsafe.Pointer(w32.GlobalAlloc(0, uint32(unsafe.Sizeof(w32.MSG{})))))
+	defer w32.GlobalFree(w32.HGLOBAL(unsafe.Pointer(m)))
+
 	for i := 0; i < 10; i++ {
-		if w32.GetMessage(&m, 0, 0, 0) != 0 {
-			if !PreTranslateMessage(&m) {
-				w32.TranslateMessage(&m)
-				w32.DispatchMessage(&m)
+		if w32.GetMessage(m, 0, 0, 0) != 0 {
+			if !PreTranslateMessage(m) {
+				w32.TranslateMessage(m)
+				w32.DispatchMessage(m)
 			}
 		}
 	}
