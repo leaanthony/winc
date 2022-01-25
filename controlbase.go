@@ -485,12 +485,11 @@ func (cba *ControlBase) scaleWithWindowDPI(width, height int) (int, int) {
 	} else {
 		dpix, dpiy = cba.GetSystemXYDPI()
 	}
-	DPIScaleX := dpix / 96.0
-	DPIScaleY := dpiy / 96.0
 
-	width *= int(DPIScaleX)
-	height *= int(DPIScaleY)
-	return width, height
+	scaledWidth := (width * int(dpix)) / 96
+	scaledHeight := (height * int(dpiy)) / 96
+
+	return scaledWidth, scaledHeight
 }
 
 func (cba *ControlBase) tryInvokeOnCurrentGoRoutine(f func()) bool {
