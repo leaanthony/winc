@@ -267,21 +267,33 @@ func (fm *Form) WndProc(msg uint32, wparam, lparam uintptr) uintptr {
 			fm.layoutMng.Update()
 		}
 	case w32.WM_GETMINMAXINFO:
-		if fm.minWidth != 0 || fm.maxWidth != 0 || fm.minHeight != 0 || fm.maxHeight != 0 {
-			mmi := (*w32.MINMAXINFO)(unsafe.Pointer(lparam))
-			if fm.minWidth > 0 && fm.minHeight > 0 {
-				width, height := fm.scaleWithWindowDPI(fm.minWidth, fm.minHeight)
+		mmi := (*w32.MINMAXINFO)(unsafe.Pointer(lparam))
+		hasConstraints := false
+		if fm.minWidth > 0 || fm.minHeight > 0 {
+			hasConstraints = true
 
+			width, height := fm.scaleWithWindowDPI(fm.minWidth, fm.minHeight)
+			if width > 0 {
 				mmi.PtMinTrackSize.X = int32(width)
+			}
+			if height > 0 {
 				mmi.PtMinTrackSize.Y = int32(height)
 			}
-			if fm.maxWidth > 0 && fm.maxHeight > 0 {
-				width, height := fm.scaleWithWindowDPI(fm.maxWidth, fm.maxHeight)
+		}
+		if fm.maxWidth > 0 || fm.maxHeight > 0 {
+			hasConstraints = true
+
+			width, height := fm.scaleWithWindowDPI(fm.maxWidth, fm.maxHeight)
+			if width > 0 {
 				mmi.PtMaxSize.X = int32(width)
-				mmi.PtMaxSize.Y = int32(height)
 				mmi.PtMaxTrackSize.X = int32(width)
+			}
+			if height > 0 {
+				mmi.PtMaxSize.Y = int32(height)
 				mmi.PtMaxTrackSize.Y = int32(height)
 			}
+		}
+		if hasConstraints {
 			return 0
 		}
 	}
