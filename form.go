@@ -285,11 +285,9 @@ func (fm *Form) WndProc(msg uint32, wparam, lparam uintptr) uintptr {
 
 			width, height := fm.scaleWithWindowDPI(fm.maxWidth, fm.maxHeight)
 			if width > 0 {
-				mmi.PtMaxSize.X = int32(width)
 				mmi.PtMaxTrackSize.X = int32(width)
 			}
 			if height > 0 {
-				mmi.PtMaxSize.Y = int32(height)
 				mmi.PtMaxTrackSize.Y = int32(height)
 			}
 		}
