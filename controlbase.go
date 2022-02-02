@@ -226,7 +226,7 @@ func (cba *ControlBase) SetMaxSize(width, height int) {
 	cba.maxHeight = height
 
 	// Ensure we set min if max > min
-	if cba.minWidth > 0 {
+	if cba.maxWidth > 0 {
 		cba.minWidth = min(cba.maxWidth, cba.minWidth)
 	}
 	if cba.maxHeight > 0 {
