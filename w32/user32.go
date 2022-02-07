@@ -126,6 +126,7 @@ var (
 	procMonitorFromWindow             = moduser32.NewProc("MonitorFromWindow")
 	procGetMonitorInfo                = moduser32.NewProc("GetMonitorInfoW")
 	procGetDpiForSystem               = moduser32.NewProc("GetDpiForSystem")
+	procGetDpiForWindow               = moduser32.NewProc("GetDpiForWindow")
 	procEnumDisplayMonitors           = moduser32.NewProc("EnumDisplayMonitors")
 	procEnumDisplaySettingsEx         = moduser32.NewProc("EnumDisplaySettingsExW")
 	procChangeDisplaySettingsEx       = moduser32.NewProc("ChangeDisplaySettingsExW")
@@ -267,6 +268,16 @@ func AdjustWindowRect(rect *RECT, style uint, menu bool) bool {
 func DestroyWindow(hwnd HWND) bool {
 	ret, _, _ := procDestroyWindow.Call(hwnd)
 	return ret != 0
+}
+
+func HasGetDpiForWindowFunc() bool {
+	err := procDestroyWindow.Find()
+	return err == nil
+}
+
+func GetDpiForWindow(hwnd HWND) UINT {
+	dpi, _, _ := procGetDpiForWindow.Call(hwnd)
+	return uint(dpi)
 }
 
 func SetWindowCompositionAttribute(hwnd HWND, data *WINDOWCOMPOSITIONATTRIBDATA) bool {

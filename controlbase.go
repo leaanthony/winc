@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"unsafe"
 
-	"golang.org/x/sys/windows"
-
 	"github.com/leaanthony/winc/w32"
 )
 
@@ -100,19 +98,31 @@ func (cba *ControlBase) SetHandle(hwnd w32.HWND) {
 	cba.hwnd = hwnd
 }
 
-func (cba *ControlBase) GetSystemXYDPI() (w32.UINT, w32.UINT) {
+func (cba *ControlBase) GetWindowDPI() (w32.UINT, w32.UINT) {
+	if w32.HasGetDpiForWindowFunc() {
+		// GetDpiForWindow is supported beginning with Windows 10, 1607 and is the most accureate
+		// one, especially it is consistent with the WM_DPICHANGED event.
+		dpi := w32.GetDpiForWindow(cba.hwnd)
+		return dpi, dpi
+	}
+
+	if w32.HasGetDPIForMonitorFunc() {
+		// GetDpiForWindow is supported beginning with Windows 8.1
+		monitor := w32.MonitorFromWindow(cba.hwnd, w32.MONITOR_DEFAULTTONEAREST)
+		if monitor == 0 {
+			return 0, 0
+		}
+		var dpiX, dpiY w32.UINT
+		w32.GetDPIForMonitor(monitor, w32.MDT_EFFECTIVE_DPI, &dpiX, &dpiY)
+		return dpiX, dpiY
+	}
+
+	// If none of the above is supported fallback to the System DPI.
 	screen := w32.GetDC(0)
 	x := w32.GetDeviceCaps(screen, w32.LOGPIXELSX)
 	y := w32.GetDeviceCaps(screen, w32.LOGPIXELSY)
 	w32.ReleaseDC(0, screen)
 	return w32.UINT(x), w32.UINT(y)
-}
-
-func (cba *ControlBase) GetWindowDPI() (w32.UINT, w32.UINT) {
-	monitor := w32.MonitorFromWindow(cba.hwnd, w32.MONITOR_DEFAULTTOPRIMARY)
-	var dpiX, dpiY w32.UINT
-	w32.GetDPIForMonitor(monitor, w32.MDT_EFFECTIVE_DPI, &dpiX, &dpiY)
-	return dpiX, dpiY
 }
 
 func (cba *ControlBase) SetAndClearStyleBits(set, clear uint32) error {
@@ -186,13 +196,6 @@ func (cba *ControlBase) clampSize(width, height int) (int, int) {
 		height = min(height, cba.maxHeight)
 	}
 	return width, height
-}
-
-func supportsPerMonitorDPI() bool {
-	shcore := windows.NewLazyDLL("shcore.dll")
-	getDpiForMonitor := shcore.NewProc("GetDpiForMonitor")
-	shcoreErr := getDpiForMonitor.Find()
-	return shcoreErr == nil
 }
 
 func (cba *ControlBase) SetSize(width, height int) {
@@ -479,15 +482,9 @@ func (cba *ControlBase) OnKeyUp() *EventManager {
 }
 
 func (cba *ControlBase) scaleWithWindowDPI(width, height int) (int, int) {
-	var dpix, dpiy w32.UINT
-	if supportsPerMonitorDPI() {
-		dpix, dpiy = cba.GetWindowDPI()
-	} else {
-		dpix, dpiy = cba.GetSystemXYDPI()
-	}
-
-	scaledWidth := (width * int(dpix)) / 96
-	scaledHeight := (height * int(dpiy)) / 96
+	dpix, dpiy := cba.GetWindowDPI()
+	scaledWidth := ScaleWithDPI(width, dpix)
+	scaledHeight := ScaleWithDPI(height, dpiy)
 
 	return scaledWidth, scaledHeight
 }
