@@ -271,7 +271,7 @@ func DestroyWindow(hwnd HWND) bool {
 }
 
 func HasGetDpiForWindowFunc() bool {
-	err := procDestroyWindow.Find()
+	err := procGetDpiForWindow.Find()
 	return err == nil
 }
 
